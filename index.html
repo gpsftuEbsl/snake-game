@@ -24,31 +24,41 @@
     let dy = 0;
     let apple = { x: 320, y: 200 };
     let score = 0;
+    let gameRunning = true;
 
     function drawRect(x, y, color) {
       ctx.fillStyle = color;
       ctx.fillRect(x, y, grid - 2, grid - 2);
     }
 
-    function gameLoop() {
+    function resetGame() {
+      snake = [{ x: 160, y: 200 }];
+      dx = grid;
+      dy = 0;
+      apple = { x: 320, y: 200 };
+      score = 0;
+      gameRunning = true;
+    }
+
+    function update() {
+      if (!gameRunning) return;
+
       const head = { x: snake[0].x + dx, y: snake[0].y + dy };
 
       // 碰到邊界或自己
       if (
         head.x < 0 || head.x >= canvas.width ||
         head.y < 0 || head.y >= canvas.height ||
-        snake.slice(1).some(s => s.x === head.x && s.y === head.y) // 只檢查身體
+        snake.some(s => s.x === head.x && s.y === head.y)
       ) {
         alert("Game Over！你吃到自己了");
-        snake = [{ x: 160, y: 200 }];
-        dx = grid;
-        dy = 0;
-        apple = { x: 320, y: 200 };
-        score = 0;
+        gameRunning = false;
+        resetGame();
+        return;
       }
 
-
       snake.unshift(head);
+
       if (head.x === apple.x && head.y === apple.y) {
         score++;
         apple = {
@@ -58,22 +68,28 @@
       } else {
         snake.pop();
       }
+    }
 
+    function draw() {
       ctx.clearRect(0, 0, canvas.width, canvas.height);
       drawRect(apple.x, apple.y, "red");
       snake.forEach((s, i) => drawRect(s.x, s.y, i === 0 ? "lime" : "green"));
+    }
 
-      requestAnimationFrame(gameLoop);
+    function loop() {
+      update();
+      draw();
     }
 
     document.addEventListener("keydown", e => {
-      if (e.key === "ArrowUp" && dy === 0) dy = -grid, dx = 0;
-      if (e.key === "ArrowDown" && dy === 0) dy = grid, dx = 0;
-      if (e.key === "ArrowLeft" && dx === 0) dx = -grid, dy = 0;
-      if (e.key === "ArrowRight" && dx === 0) dx = grid, dy = 0;
+      if (e.key === "ArrowUp" && dy === 0) { dy = -grid; dx = 0; }
+      if (e.key === "ArrowDown" && dy === 0) { dy = grid; dx = 0; }
+      if (e.key === "ArrowLeft" && dx === 0) { dx = -grid; dy = 0; }
+      if (e.key === "ArrowRight" && dx === 0) { dx = grid; dy = 0; }
     });
 
-    requestAnimationFrame(gameLoop);
+    // 每100ms更新一次狀態
+    setInterval(loop, 100);
   </script>
 </body>
 </html>
