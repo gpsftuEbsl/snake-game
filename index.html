@@ -115,7 +115,6 @@
 
       if (head.x === apple.x && head.y === apple.y) {
         score++;
-        alert("好棒棒!");
         apple = {
           x: Math.floor(Math.random() * (canvas.width / grid)) * grid,
           y: Math.floor(Math.random() * (canvas.height / grid)) * grid,
@@ -160,7 +159,7 @@
       if (dx === 0) { dx = grid; dy = 0; }
     });
 
-    setInterval(loop, 400);
+    setInterval(loop, 300);
   </script>
 </body>
 </html>
