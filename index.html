@@ -2,273 +2,119 @@
 <html lang="zh-Hant">
 <head>
   <meta charset="UTF-8" />
-  <title>貪吃蛇 Snake Game</title>
+  <title>貪吃蛇 - 控制速度</title>
   <style>
-    body {
-      display: flex;
-      justify-content: center;
-      align-items: flex-start;
-      gap: 40px;
-      background-color: #000;
-      color: #0f0;
-      font-family: sans-serif;
-      margin: 40px;
+    canvas {
+      background-color: #111;
+      display: block;
+      margin: 20px auto;
     }
-
-    #game {
-      background: #111;
-      border: 3px solid #0f0;
-    }
-
-    .right-panel {
-      display: flex;
-      flex-direction: column;
-      gap: 20px;
-      min-width: 220px;
-    }
-
-    .controls {
-      display: grid;
-      grid-template-columns: 1fr 1fr 1fr;
-      gap: 10px;
-      user-select: none;
-      justify-items: center;
-      width: 200px;
-    }
-
-    .btn {
-      background: #0f0;
-      border: none;
-      padding: 15px;
-      font-size: 18px;
-      color: #000;
-      font-weight: bold;
-      border-radius: 10px;
-      cursor: pointer;
-      user-select: none;
-      width: 60px;
+    input {
+      display: block;
+      margin: 0 auto;
       text-align: center;
-    }
-
-    .btn:active {
-      background: #8f8;
-    }
-
-    .up {
-      grid-column: 2;
-    }
-
-    .left {
-      grid-column: 1;
-    }
-
-    .right {
-      grid-column: 3;
-    }
-
-    .down {
-      grid-column: 2;
-    }
-
-    label, input {
       font-size: 16px;
-    }
-
-    input[type="number"] {
-      width: 100px;
       padding: 5px;
-      border-radius: 5px;
-      border: 1px solid #0f0;
-      background: #111;
-      color: #0f0;
-      font-weight: bold;
-    }
-
-    button#startBtn {
-      background: #0f0;
-      color: #000;
-      font-weight: bold;
-      border-radius: 10px;
-      border: none;
-      padding: 10px 0;
-      cursor: pointer;
-      margin-top: 10px;
-    }
-
-    button#startBtn:active {
-      background: #8f8;
-    }
-
-    .scoreboard {
-      font-size: 18px;
-      line-height: 1.5;
-      white-space: pre-line;
     }
   </style>
 </head>
 <body>
-  <canvas id="game" width="400" height="400"></canvas>
+  <canvas id="gameCanvas" width="400" height="400"></canvas>
+  <input type="number" id="speedInput" placeholder="請輸入速度 (例如 5)" />
 
-  <div class="right-panel">
-    <div>
-      <label for="speedInput">遊戲速度 (毫秒，越大越慢):</label><br />
-      <input type="number" id="speedInput" min="50" max="1000" step="10" value="300" />
-      <button id="startBtn">開始遊戲</button>
-    </div>
+  <script>
+    const canvas = document.getElementById("gameCanvas");
+    const ctx = canvas.getContext("2d");
 
-    <div class="controls">
-      <button class="btn up">↑</button>
-      <button class="btn left">←</button>
-      <button class="btn right">→</button>
-      <button class="btn down">↓</button>
-    </div>
+    const gridSize = 20;
+    let snake = [{ x: 5, y: 5 }];
+    let direction = { x: 1, y: 0 };
+    let food = { x: 10, y: 10 };
+    let lastUpdate = 0;
 
-    <div class="scoreboard" id="scoreboard">
-      長度：1<br>
-      歷史最高長度：1
-    </div>
-  </div>
+    // 預設速度（格子/秒）
+    let speed = 5;
 
-<script>
-  const canvas = document.getElementById("game");
-  const ctx = canvas.getContext("2d");
-
-  const grid = 20;
-  let snake = [];
-  let dx = grid;
-  let dy = 0;
-  let apple = {};
-  let badApple = {};
-  let score = 0;
-  let gameRunning = false;
-  let timerId = null;
-  let intervalSpeed = 300; // 預設速度(ms)
-
-  let maxLength = 1;
-
-  const scoreboard = document.getElementById("scoreboard");
-
-  function drawRect(x, y, color) {
-    ctx.fillStyle = color;
-    ctx.fillRect(x, y, grid - 2, grid - 2);
-  }
-
-  function randomPosition() {
-    return {
-      x: Math.floor(Math.random() * (canvas.width / grid)) * grid,
-      y: Math.floor(Math.random() * (canvas.height / grid)) * grid,
-    };
-  }
-
-  function spawnFruits() {
-    apple = randomPosition();
-    badApple = randomPosition();
-    // 防止兩個重疊在一起
-    while (apple.x === badApple.x && apple.y === badApple.y) {
-      badApple = randomPosition();
-    }
-  }
-
-  function resetGame() {
-    snake = [{ x: 160, y: 200 }];
-    dx = grid;
-    dy = 0;
-    score = 0;
-    gameRunning = true;
-    spawnFruits();
-    updateScoreboard();
-  }
-
-  function updateScoreboard() {
-    scoreboard.innerHTML = `長度：${snake.length}<br>歷史最高長度：${maxLength}`;
-  }
-
-  function update() {
-    if (!gameRunning) return;
-
-    const head = { x: snake[0].x + dx, y: snake[0].y + dy };
-
-    // 撞牆或撞自己
-    if (
-      head.x < 0 || head.x >= canvas.width ||
-      head.y < 0 || head.y >= canvas.height ||
-      snake.some(s => s.x === head.x && s.y === head.y)
-    ) {
-      alert("Game Over！你輸爛了!");
-      gameRunning = false;
-      clearInterval(timerId);
-      if (snake.length > maxLength) {
-        maxLength = snake.length;
+    // 監聽速度輸入
+    document.getElementById("speedInput").addEventListener("input", (e) => {
+      const value = parseFloat(e.target.value);
+      if (!isNaN(value) && value > 0) {
+        speed = value;
       }
-      updateScoreboard();
-      resetGame();
-      return;
-    }
+    });
 
-    snake.unshift(head);
+    function update() {
+      const head = { x: snake[0].x + direction.x, y: snake[0].y + direction.y };
+      snake.unshift(head);
 
-    let ateApple = head.x === apple.x && head.y === apple.y;
-    let ateBadApple = head.x === badApple.x && head.y === badApple.y;
-
-    if (ateApple || ateBadApple) {
-      spawnFruits();
-      if (ateBadApple) {
-        snake.pop(); // 少一格
-        snake.pop(); // 再少一格
-        if (snake.length <= 0) {
-          alert("你吃到了藍色方塊，然後……沒了");
-          gameRunning = false;
-          clearInterval(timerId);
-          resetGame();
-          return;
-        }
+      if (head.x === food.x && head.y === food.y) {
+        placeFood();
+      } else {
+        snake.pop();
       }
-    } else {
-      snake.pop(); // 正常移動減尾巴
+
+      // 撞牆重生
+      if (
+        head.x < 0 || head.x >= canvas.width / gridSize ||
+        head.y < 0 || head.y >= canvas.height / gridSize
+      ) {
+        snake = [{ x: 5, y: 5 }];
+        direction = { x: 1, y: 0 };
+      }
     }
 
-    if (snake.length > maxLength) {
-      maxLength = snake.length;
+    function placeFood() {
+      food = {
+        x: Math.floor(Math.random() * canvas.width / gridSize),
+        y: Math.floor(Math.random() * canvas.height / gridSize)
+      };
     }
 
-    updateScoreboard();
-  }
+    function draw() {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-  function draw() {
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
-    drawRect(apple.x, apple.y, "red");
-    drawRect(badApple.x, badApple.y, "blue");
-    snake.forEach((s, i) => drawRect(s.x, s.y, i === 0 ? "lime" : "green"));
-  }
+      // 畫蛇
+      ctx.fillStyle = "lime";
+      snake.forEach(part => {
+        ctx.fillRect(part.x * gridSize, part.y * gridSize, gridSize, gridSize);
+      });
 
-  function loop() {
-    update();
-    draw();
-  }
+      // 畫食物
+      ctx.fillStyle = "red";
+      ctx.fillRect(food.x * gridSize, food.y * gridSize, gridSize, gridSize);
+    }
 
-  // 控制鍵盤
-  document.addEventListener("keydown", e => {
-    if (!gameRunning) return;
-    if (e.key === "ArrowUp" && dy === 0) { dy = -grid; dx = 0; }
-    if (e.key === "ArrowDown" && dy === 0) { dy = grid; dx = 0; }
-    if (e.key === "ArrowLeft" && dx === 0) { dx = -grid; dy = 0; }
-    if (e.key === "ArrowRight" && dx === 0) { dx = grid; dy = 0; }
-  });
+    // 使用 requestAnimationFrame 控制節奏
+    function gameLoop(timestamp) {
+      const interval = 1000 / speed;
+      if (timestamp - lastUpdate > interval) {
+        update();
+        draw();
+        lastUpdate = timestamp;
+      }
+      requestAnimationFrame(gameLoop);
+    }
 
-  // 控制按鈕
-  document.querySelector(".up").addEventListener("click", () => { if (dy === 0) { dx = 0; dy = -grid; } });
-  document.querySelector(".down").addEventListener("click", () => { if (dy === 0) { dx = 0; dy = grid; } });
-  document.querySelector(".left").addEventListener("click", () => { if (dx === 0) { dx = -grid; dy = 0; } });
-  document.querySelector(".right").addEventListener("click", () => { if (dx === 0) { dx = grid; dy = 0; } });
+    // 控制鍵盤方向
+    document.addEventListener("keydown", (e) => {
+      switch (e.key) {
+        case "ArrowUp":
+          if (direction.y === 0) direction = { x: 0, y: -1 };
+          break;
+        case "ArrowDown":
+          if (direction.y === 0) direction = { x: 0, y: 1 };
+          break;
+        case "ArrowLeft":
+          if (direction.x === 0) direction = { x: -1, y: 0 };
+          break;
+        case "ArrowRight":
+          if (direction.x === 0) direction = { x: 1, y: 0 };
+          break;
+      }
+    });
 
-  // 開始按鈕
-  document.getElementById("startBtn").addEventListener("click", () => {
-    if (gameRunning) return;
-    intervalSpeed = parseInt(document.getElementById("speedInput").value, 10);
-    resetGame();
-    timerId = setInterval(loop, intervalSpeed);
-  });
-</script>
-
+    // 開始遊戲
+    requestAnimationFrame(gameLoop);
+  </script>
 </body>
 </html>
