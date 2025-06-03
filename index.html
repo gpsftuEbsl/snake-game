@@ -5,10 +5,10 @@
   <title>貪吃蛇 Snake Game</title>
   <style>
     body {
-      font-family: sans-serif;
-      background: #000;
-      color: #0f0;
       text-align: center;
+      background-color: #000;
+      color: #0f0;
+      font-family: sans-serif;
     }
 
     canvas {
@@ -19,47 +19,54 @@
     }
 
     .controls {
-      display: flex;
-      flex-direction: column;
-      align-items: center;
+      display: grid;
+      grid-template-columns: 1fr 1fr 1fr;
       gap: 10px;
-      margin-top: 10px;
+      max-width: 200px;
+      margin: 0 auto;
+      user-select: none;
     }
 
-    .row {
-      display: flex;
-      justify-content: center;
-      gap: 10px;
-    }
-
-    .control-btn {
-      width: 60px;
-      height: 60px;
-      font-size: 24px;
-      background: #222;
-      color: #0f0;
-      border: 2px solid #0f0;
+    .btn {
+      background: #0f0;
+      border: none;
+      padding: 15px;
+      font-size: 18px;
+      color: #000;
+      font-weight: bold;
       border-radius: 10px;
     }
 
-    .control-btn:active {
-      background: #0f0;
-      color: #000;
+    .btn:active {
+      background: #8f8;
+    }
+
+    .up {
+      grid-column: 2;
+    }
+
+    .left {
+      grid-column: 1;
+    }
+
+    .right {
+      grid-column: 3;
+    }
+
+    .down {
+      grid-column: 2;
     }
   </style>
 </head>
 <body>
   <canvas id="game" width="400" height="400"></canvas>
 
+  <!-- 控制按鈕 -->
   <div class="controls">
-    <div class="row">
-      <button class="control-btn" onclick="changeDirection('up')">↑</button>
-    </div>
-    <div class="row">
-      <button class="control-btn" onclick="changeDirection('left')">←</button>
-      <button class="control-btn" onclick="changeDirection('down')">↓</button>
-      <button class="control-btn" onclick="changeDirection('right')">→</button>
-    </div>
+    <button class="btn up">↑</button>
+    <button class="btn left">←</button>
+    <button class="btn right">→</button>
+    <button class="btn down">↓</button>
   </div>
 
   <script>
@@ -128,18 +135,28 @@
       draw();
     }
 
-    function changeDirection(dir) {
-      if (dir === "up" && dy === 0) { dy = -grid; dx = 0; }
-      if (dir === "down" && dy === 0) { dy = grid; dx = 0; }
-      if (dir === "left" && dx === 0) { dx = -grid; dy = 0; }
-      if (dir === "right" && dx === 0) { dx = grid; dy = 0; }
-    }
-
     document.addEventListener("keydown", e => {
-      if (e.key === "ArrowUp") changeDirection("up");
-      if (e.key === "ArrowDown") changeDirection("down");
-      if (e.key === "ArrowLeft") changeDirection("left");
-      if (e.key === "ArrowRight") changeDirection("right");
+      if (e.key === "ArrowUp" && dy === 0) { dy = -grid; dx = 0; }
+      if (e.key === "ArrowDown" && dy === 0) { dy = grid; dx = 0; }
+      if (e.key === "ArrowLeft" && dx === 0) { dx = -grid; dy = 0; }
+      if (e.key === "ArrowRight" && dx === 0) { dx = grid; dy = 0; }
+    });
+
+    // 控制按鈕事件（手機觸控）
+    document.querySelector(".up").addEventListener("click", () => {
+      if (dy === 0) { dy = -grid; dx = 0; }
+    });
+
+    document.querySelector(".down").addEventListener("click", () => {
+      if (dy === 0) { dy = grid; dx = 0; }
+    });
+
+    document.querySelector(".left").addEventListener("click", () => {
+      if (dx === 0) { dx = -grid; dy = 0; }
+    });
+
+    document.querySelector(".right").addEventListener("click", () => {
+      if (dx === 0) { dx = grid; dy = 0; }
     });
 
     setInterval(loop, 100);
