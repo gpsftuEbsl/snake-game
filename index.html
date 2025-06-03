@@ -5,26 +5,35 @@
   <title>貪吃蛇 Snake Game</title>
   <style>
     body {
-      text-align: center;
+      display: flex;
+      justify-content: center;
+      align-items: flex-start;
+      gap: 40px;
       background-color: #000;
       color: #0f0;
       font-family: sans-serif;
+      margin: 40px;
     }
 
-    canvas {
+    #game {
       background: #111;
-      display: block;
-      margin: 40px auto 20px;
       border: 3px solid #0f0;
+    }
+
+    .right-panel {
+      display: flex;
+      flex-direction: column;
+      gap: 20px;
+      min-width: 220px;
     }
 
     .controls {
       display: grid;
       grid-template-columns: 1fr 1fr 1fr;
       gap: 10px;
-      max-width: 200px;
-      margin: 0 auto;
       user-select: none;
+      justify-items: center;
+      width: 200px;
     }
 
     .btn {
@@ -35,6 +44,10 @@
       color: #000;
       font-weight: bold;
       border-radius: 10px;
+      cursor: pointer;
+      user-select: none;
+      width: 60px;
+      text-align: center;
     }
 
     .btn:active {
@@ -56,17 +69,64 @@
     .down {
       grid-column: 2;
     }
+
+    label, input {
+      font-size: 16px;
+    }
+
+    input[type="number"] {
+      width: 100px;
+      padding: 5px;
+      border-radius: 5px;
+      border: 1px solid #0f0;
+      background: #111;
+      color: #0f0;
+      font-weight: bold;
+    }
+
+    button#startBtn {
+      background: #0f0;
+      color: #000;
+      font-weight: bold;
+      border-radius: 10px;
+      border: none;
+      padding: 10px 0;
+      cursor: pointer;
+      margin-top: 10px;
+    }
+
+    button#startBtn:active {
+      background: #8f8;
+    }
+
+    .scoreboard {
+      font-size: 18px;
+      line-height: 1.5;
+      white-space: pre-line;
+    }
   </style>
 </head>
 <body>
   <canvas id="game" width="400" height="400"></canvas>
 
-  <!-- 控制按鈕 -->
-  <div class="controls">
-    <button class="btn up">↑</button>
-    <button class="btn left">←</button>
-    <button class="btn right">→</button>
-    <button class="btn down">↓</button>
+  <div class="right-panel">
+    <div>
+      <label for="speedInput">遊戲速度 (毫秒，越大越慢):</label><br />
+      <input type="number" id="speedInput" min="50" max="1000" step="10" value="300" />
+      <button id="startBtn">開始遊戲</button>
+    </div>
+
+    <div class="controls">
+      <button class="btn up">↑</button>
+      <button class="btn left">←</button>
+      <button class="btn right">→</button>
+      <button class="btn down">↓</button>
+    </div>
+
+    <div class="scoreboard" id="scoreboard">
+      長度：1<br>
+      歷史最高長度：1
+    </div>
   </div>
 
   <script>
@@ -74,12 +134,19 @@
     const ctx = canvas.getContext("2d");
 
     const grid = 20;
-    let snake = [{ x: 160, y: 200 }];
+    let snake = [];
     let dx = grid;
     let dy = 0;
-    let apple = { x: 320, y: 200 };
+    let apple = {};
     let score = 0;
-    let gameRunning = true;
+    let gameRunning = false;
+    let timerId = null;
+    let intervalSpeed = 300; // 預設速度(ms)
+
+    // 紀錄最高分
+    let maxLength = 1;
+
+    const scoreboard = document.getElementById("scoreboard");
 
     function drawRect(x, y, color) {
       ctx.fillStyle = color;
@@ -90,9 +157,17 @@
       snake = [{ x: 160, y: 200 }];
       dx = grid;
       dy = 0;
-      apple = { x: 320, y: 200 };
+      apple = {
+        x: Math.floor(Math.random() * (canvas.width / grid)) * grid,
+        y: Math.floor(Math.random() * (canvas.height / grid)) * grid,
+      };
       score = 0;
       gameRunning = true;
+      updateScoreboard();
+    }
+
+    function updateScoreboard() {
+      scoreboard.innerHTML = `長度：${snake.length}<br>歷史最高長度：${maxLength}`;
     }
 
     function update() {
@@ -100,6 +175,7 @@
 
       const head = { x: snake[0].x + dx, y: snake[0].y + dy };
 
+      // 邊界撞擊 or 吃到自己
       if (
         head.x < 0 || head.x >= canvas.width ||
         head.y < 0 || head.y >= canvas.height ||
@@ -107,6 +183,11 @@
       ) {
         alert("Game Over！你輸爛了!");
         gameRunning = false;
+        clearInterval(timerId);
+        if (snake.length > maxLength) {
+          maxLength = snake.length;
+          updateScoreboard();
+        }
         resetGame();
         return;
       }
@@ -115,6 +196,7 @@
 
       if (head.x === apple.x && head.y === apple.y) {
         score++;
+        // 蘋果重新生成
         apple = {
           x: Math.floor(Math.random() * (canvas.width / grid)) * grid,
           y: Math.floor(Math.random() * (canvas.height / grid)) * grid,
@@ -122,6 +204,12 @@
       } else {
         snake.pop();
       }
+
+      // 更新分數和最高分
+      if (snake.length > maxLength) {
+        maxLength = snake.length;
+      }
+      updateScoreboard();
     }
 
     function draw() {
@@ -135,7 +223,9 @@
       draw();
     }
 
+    // 控制鍵盤事件
     document.addEventListener("keydown", e => {
+      if (!gameRunning) return;
       if (e.key === "ArrowUp" && dy === 0) { dy = -grid; dx = 0; }
       if (e.key === "ArrowDown" && dy === 0) { dy = grid; dx = 0; }
       if (e.key === "ArrowLeft" && dx === 0) { dx = -grid; dy = 0; }
@@ -144,22 +234,41 @@
 
     // 控制按鈕事件（手機觸控）
     document.querySelector(".up").addEventListener("click", () => {
+      if (!gameRunning) return;
       if (dy === 0) { dy = -grid; dx = 0; }
     });
 
     document.querySelector(".down").addEventListener("click", () => {
+      if (!gameRunning) return;
       if (dy === 0) { dy = grid; dx = 0; }
     });
 
     document.querySelector(".left").addEventListener("click", () => {
+      if (!gameRunning) return;
       if (dx === 0) { dx = -grid; dy = 0; }
     });
 
     document.querySelector(".right").addEventListener("click", () => {
+      if (!gameRunning) return;
       if (dx === 0) { dx = grid; dy = 0; }
     });
 
-    setInterval(loop, 300);
+    // 開始遊戲按鈕
+    document.getElementById("startBtn").addEventListener("click", () => {
+      // 取得速度輸入
+      const inputSpeed = parseInt(document.getElementById("speedInput").value, 10);
+      if (isNaN(inputSpeed) || inputSpeed < 50 || inputSpeed > 1000) {
+        alert("請輸入介於 50 到 1000 的數字");
+        return;
+      }
+      intervalSpeed = inputSpeed;
+
+      if (timerId) clearInterval(timerId);
+      resetGame();
+      timerId = setInterval(loop, intervalSpeed);
+    });
+
+    // 預設不自動開始，等待玩家按開始
   </script>
 </body>
 </html>
