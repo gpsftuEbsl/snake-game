@@ -105,7 +105,7 @@
         head.y < 0 || head.y >= canvas.height ||
         snake.some(s => s.x === head.x && s.y === head.y)
       ) {
-        alert("Game Over！你吃到自己了");
+        alert("Game Over！你輸爛了!");
         gameRunning = false;
         resetGame();
         return;
@@ -115,6 +115,7 @@
 
       if (head.x === apple.x && head.y === apple.y) {
         score++;
+        alert("好棒棒!");
         apple = {
           x: Math.floor(Math.random() * (canvas.width / grid)) * grid,
           y: Math.floor(Math.random() * (canvas.height / grid)) * grid,
@@ -159,7 +160,7 @@
       if (dx === 0) { dx = grid; dy = 0; }
     });
 
-    setInterval(loop, 300);
+    setInterval(loop, 400);
   </script>
 </body>
 </html>
